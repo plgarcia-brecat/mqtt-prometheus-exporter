@@ -316,6 +316,55 @@ func Test_messageHandler(t *testing.T) {
 			msg:          fakeMessage{topic: "/topic", payload: []byte(`{"state": [true]}`)},
 			wantObserved: false,
 		},
+		{
+			name: "JSON value mapping first entry",
+			args: args{
+				metric: config.Metric{MqttTopic: "/topic", JSONField: "state", JSONValueMapping: []string{"closed", "open", "half-open"}},
+			},
+			msg:             fakeMessage{topic: "/topic", payload: []byte(`{"state": "closed"}`)},
+			wantObserved:    true,
+			wantValue:       0,
+			wantLabelValues: []string{"/topic"},
+		},
+		{
+			name: "JSON value mapping matched case insensitively",
+			args: args{
+				metric: config.Metric{MqttTopic: "/topic", JSONField: "state", JSONValueMapping: []string{"closed", "open", "half-open"}},
+			},
+			msg:             fakeMessage{topic: "/topic", payload: []byte(`{"state": "HALF-OPEN"}`)},
+			wantObserved:    true,
+			wantValue:       2,
+			wantLabelValues: []string{"/topic"},
+		},
+		{
+			name: "JSON value mapping no match returns -1",
+			args: args{
+				metric: config.Metric{MqttTopic: "/topic", JSONField: "state", JSONValueMapping: []string{"closed", "open"}},
+			},
+			msg:             fakeMessage{topic: "/topic", payload: []byte(`{"state": "ajar"}`)},
+			wantObserved:    true,
+			wantValue:       -1,
+			wantLabelValues: []string{"/topic"},
+		},
+		{
+			name: "JSON value mapping combined with topic and JSON labels",
+			args: args{
+				metric: config.Metric{
+					MqttTopic:        "/home/+/state",
+					TopicLabels:      map[string]int{"device": 2},
+					JSONField:        "door.position",
+					JSONLabels:       map[string]string{"room": "location.room"},
+					JSONValueMapping: []string{"closed", "open"},
+				},
+			},
+			msg: fakeMessage{
+				topic:   "/home/door1/state",
+				payload: []byte(`{"door": {"position": "open"}, "location": {"room": "hall"}}`),
+			},
+			wantObserved:    true,
+			wantValue:       1,
+			wantLabelValues: []string{"/home/door1/state", "door1", "hall"},
+		},
 	}
 	for _, tt := range tests {
 		for i := range 100 {

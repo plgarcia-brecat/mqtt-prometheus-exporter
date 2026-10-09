@@ -65,6 +65,31 @@ sensor_on{topic="/home/sensor1"} 0
 ```
 A value converted as a boolean is logged at `DEBUG` level only. A text field that is not a number or a boolean (e.g. `"maybe"`) is still reported as a warning.
 
+**Mapping JSON values to numbers**
+
+Use `json_value_mapping` (together with `json_field`) to turn a fixed set of string values into a metric value equal to their position (starting at `0`) in the list. This is useful for state-like fields that aren't naturally numeric or boolean, e.g. a door position of `"closed"`, `"open"` or `"half-open"`.
+
+With `{"door": {"position": "open"}}`:
+```yaml
+metrics:
+  - mqtt_topic: "/home/+/state"
+    prom_name: "door_position"
+    type: "gauge"
+    json_field: "door.position"
+    json_value_mapping:
+      - closed
+      - open
+      - half-open
+```
+produces:
+```
+door_position{topic="/home/door1/state"} 1
+```
+- Matching is case-insensitive and ignores surrounding whitespace.
+- When `json_value_mapping` is configured for a metric, it takes priority: the value is not parsed as a number or a boolean, only matched against the list.
+- If the value doesn't match any entry in the list, the metric is still observed with the value `-1` and a warning is logged, so unexpected values remain visible instead of silently dropped.
+- Entries must be unique (case-insensitively) and non-empty. `json_value_mapping` requires `json_field`. Invalid configuration prevents the exporter from starting.
+
 **Labels from JSON message properties**
 
 Use `json_labels` (together with `json_field`) to turn properties of a JSON message into Prometheus labels. It maps a label name to a dotted path of the property in the message, e.g. `{"temp": 21.5, "location": {"room": "kitchen"}, "meta": {"floor": 2}}`:
@@ -182,6 +207,15 @@ metrics:
     # label name -> path/field of the property (string, number or boolean)
     json_labels:
       room: "location.room"
+  - mqtt_topic: "/home/+/state"
+    prom_name: "door_position"
+    type: "gauge"
+    json_field: "door.position"
+    # using json_value_mapping you can map a fixed set of string values to the value equal to their index
+    json_value_mapping:
+      - closed
+      - open
+      - half-open
 ```
 
 Minimal config file can contain only `metrics` definition. Default values will be used for logging level (`INFO`), HTTP server port (`8079`) and MQTT broker URI (`:9641`).

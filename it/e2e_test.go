@@ -83,7 +83,10 @@ func (s *e2eTestSuite) Test_EndToEnd_Metrics() {
 			"enabled": 1,
 			"random": 2,
 			"armed": "ON",
-			"tamper": false
+			"tamper": false,
+			"door": {
+				"position": "open"
+			}
 		}`
 	mqttClient.Publish("/home/owen/memory", 1, true, "13")
 	mqttClient.Publish("/home/overview", 1, true, jsonPayload)
@@ -108,6 +111,9 @@ func (s *e2eTestSuite) Test_EndToEnd_Metrics() {
 
 	s.Contains(metricsBody, `# HELP sensor_tamper sensor is tampered`)
 	s.Contains(metricsBody, `sensor_tamper{topic="/home/overview"} 0`)
+
+	s.Contains(metricsBody, `# HELP door_position door position`)
+	s.Contains(metricsBody, `door_position{topic="/home/overview"} 1`)
 }
 
 func (s *e2eTestSuite) httpResponseBody(path string) string {

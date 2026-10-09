@@ -53,13 +53,23 @@ func (h *messageHandler) getJSONMessageHandler() pahomqtt.MessageHandler {
 		}
 
 		if value, ok := findInJSON(jsonMap, h.metric.JSONField); ok {
-			floatValue, isBoolean, err := jsonValueToFloat(value)
-			if err != nil {
-				log.Logger.With(zap.Error(err)).Warnf("Got data with unexpected value %q and failed to parse to float.", fmt.Sprintf("%v", value))
-				return
-			}
-			if isBoolean {
-				log.Logger.Debugf("Converted boolean value %q of '%s' to %v.", fmt.Sprintf("%v", value), h.metric.JSONField, floatValue)
+			var floatValue float64
+			if len(h.metric.JSONValueMapping) > 0 {
+				floatValue = jsonValueMappingIndex(value, h.metric.JSONValueMapping)
+				if floatValue < 0 {
+					log.Logger.Warnf("Value %q of '%s' doesn't match any entry in json_value_mapping, using -1.", fmt.Sprintf("%v", value), h.metric.JSONField)
+				}
+			} else {
+				var isBoolean bool
+				var err error
+				floatValue, isBoolean, err = jsonValueToFloat(value)
+				if err != nil {
+					log.Logger.With(zap.Error(err)).Warnf("Got data with unexpected value %q and failed to parse to float.", fmt.Sprintf("%v", value))
+					return
+				}
+				if isBoolean {
+					log.Logger.Debugf("Converted boolean value %q of '%s' to %v.", fmt.Sprintf("%v", value), h.metric.JSONField, floatValue)
+				}
 			}
 			labelValues, err := h.jsonLabelValues(msg.Topic(), jsonMap)
 			if err != nil {

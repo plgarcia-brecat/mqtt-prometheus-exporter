@@ -54,6 +54,18 @@ var booleanStrings = map[string]float64{
 	"false": 0, "f": 0, "no": 0, "off": 0,
 }
 
+// jsonValueMappingIndex returns the index of the entry in mapping that matches value, compared as
+// case-insensitive, whitespace-trimmed strings. It returns -1 when no entry matches.
+func jsonValueMappingIndex(value interface{}, mapping []string) float64 {
+	strValue := strings.ToLower(strings.TrimSpace(fmt.Sprintf("%v", value)))
+	for i, entry := range mapping {
+		if strings.ToLower(strings.TrimSpace(entry)) == strValue {
+			return float64(i)
+		}
+	}
+	return -1
+}
+
 // jsonValueToFloat converts a JSON value to the value of a metric.
 // Numbers and numeric strings are converted first. When that is not possible, booleans (true/false)
 // and the strings true/false, t/f, yes/no and on/off (in any case) are converted to 1 or 0.
