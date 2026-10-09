@@ -39,3 +39,12 @@ metrics:
     type: "gauge"
     help: "sensor is tampered"
     json_field: "tamper"
+  - mqtt_topic: "/home/overview"
+    prom_name: "door_position"
+    type: "gauge"
+    help: "door position"
+    json_field: "door.position"
+    json_value_mapping:
+      - closed
+      - open
+      - half-open

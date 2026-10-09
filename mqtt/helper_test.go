@@ -182,3 +182,29 @@ func Test_jsonValueToFloat(t *testing.T) {
 		})
 	}
 }
+
+func Test_jsonValueMappingIndex(t *testing.T) {
+	mapping := []string{"closed", "open", "half-open"}
+	tests := []struct {
+		name  string
+		value interface{}
+		want  float64
+	}{
+		{name: "first entry", value: "closed", want: 0},
+		{name: "second entry", value: "open", want: 1},
+		{name: "third entry", value: "half-open", want: 2},
+		{name: "case insensitive", value: "OPEN", want: 1},
+		{name: "trimmed whitespace", value: "  open  ", want: 1},
+		{name: "number coerced to string", value: 1.0, want: -1},
+		{name: "no match", value: "ajar", want: -1},
+		{name: "null", value: nil, want: -1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := jsonValueMappingIndex(tt.value, mapping)
+			if got != tt.want {
+				t.Errorf("jsonValueMappingIndex() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

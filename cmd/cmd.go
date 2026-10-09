@@ -58,6 +58,9 @@ var rootCmd = &cobra.Command{
 			if err := cfg.Metrics[i].ValidateLabels(); err != nil {
 				return fmt.Errorf("invalid metric '%s': %w", cfg.Metrics[i].PrometheusName, err)
 			}
+			if err := cfg.Metrics[i].ValidateValueMapping(); err != nil {
+				return fmt.Errorf("invalid metric '%s': %w", cfg.Metrics[i].PrometheusName, err)
+			}
 		}
 
 		return nil

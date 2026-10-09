@@ -80,6 +80,8 @@ type Metric struct {
 	TopicLabels    TopicLabels       `mapstructure:"topic_labels"`
 	JSONField      string            `mapstructure:"json_field"`
 	JSONLabels     JSONLabels        `mapstructure:"json_labels"`
+	// JSONValueMapping maps string values of the JSON field to the metric value equal to their index in the list.
+	JSONValueMapping []string `mapstructure:"json_value_mapping"`
 }
 
 // topicLabelName is the name of the label always added to metrics.
@@ -111,6 +113,28 @@ func (m *Metric) ValidateLabels() error {
 		if _, ok := m.TopicLabels[name]; ok {
 			return fmt.Errorf("json label name %q collides with a topic label", name)
 		}
+	}
+	return nil
+}
+
+// ValidateValueMapping checks that json_value_mapping can be used together with the rest of the metric configuration.
+func (m *Metric) ValidateValueMapping() error {
+	if len(m.JSONValueMapping) == 0 {
+		return nil
+	}
+	if m.JSONField == "" {
+		return errors.New("json_value_mapping requires json_field to be set")
+	}
+	seen := make(map[string]struct{}, len(m.JSONValueMapping))
+	for _, entry := range m.JSONValueMapping {
+		key := strings.ToLower(strings.TrimSpace(entry))
+		if key == "" {
+			return errors.New("json_value_mapping entries must not be empty")
+		}
+		if _, ok := seen[key]; ok {
+			return fmt.Errorf("json_value_mapping entry %q is duplicated", entry)
+		}
+		seen[key] = struct{}{}
 	}
 	return nil
 }

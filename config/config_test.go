@@ -459,6 +459,52 @@ func TestMetric_ValidateLabels(t *testing.T) {
 	}
 }
 
+func TestMetric_ValidateValueMapping(t *testing.T) {
+	tests := []struct {
+		name    string
+		metric  Metric
+		wantErr string
+	}{
+		{
+			name:   "no mapping",
+			metric: Metric{},
+		},
+		{
+			name:   "valid mapping",
+			metric: Metric{JSONField: "v", JSONValueMapping: []string{"closed", "open"}},
+		},
+		{
+			name:    "mapping without json_field",
+			metric:  Metric{JSONValueMapping: []string{"closed", "open"}},
+			wantErr: "json_value_mapping requires json_field",
+		},
+		{
+			name:    "empty entry",
+			metric:  Metric{JSONField: "v", JSONValueMapping: []string{"closed", "  "}},
+			wantErr: "must not be empty",
+		},
+		{
+			name:    "duplicate entry, different case",
+			metric:  Metric{JSONField: "v", JSONValueMapping: []string{"Open", "open"}},
+			wantErr: "duplicated",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.metric.ValidateValueMapping()
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Errorf("ValidateValueMapping() unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("ValidateValueMapping() error = %v, want it to contain %q", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestMQTTValidation(t *testing.T) {
 	valid := MQTT{Timeout: time.Second * 3, KeepAlive: time.Second * 30, PingTimeout: time.Second * 10}
 	tests := []struct {
